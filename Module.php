@@ -15,48 +15,69 @@ class Module implements AutoloaderProviderInterface, ConfigProviderInterface, Se
 
 	public function onBootstrap (\Zend\Mvc\MvcEvent $e)
 	{
+		/* @formatter:off */
+
+
 		/* @var $application \Zend\Mvc\Application */
 		$application = $e->getApplication();
 
 		/* @var $serviceManager \Zend\ServiceManager\ServiceManager */
 		$serviceManager = $application->getServiceManager();
 
+		/* @var $em \Zend\EventManager\EventManager */
+		$eventManager = $application->getEventManager();
+
+		/* @var $sharedManager \Zend\EventManager\SharedEventManager */
+		$sharedManager = $eventManager->getSharedManager();
+
 		/**
 		 * These are the event hooks for the Zend\Mvc\Application
 		 */
-		/* @var $em \Zend\EventManager\EventManager */
-		$eventManager = $application->getEventManager();
-		$eventHooks = array(
-			'route',
-			'dispatch',
-			'render',
-			'finish'
-		);
-		$eventManager->attach($eventHooks, function  ($evt)
+		$eventManager->attach(array('route','dispatch','render','finish'), function  ($event)
 		{
-			/* @var $evt \Zend\Mvc\MvcEvent */
-			\Zend\Debug\Debug::dump('\Zend\Mvc\Application ' . $evt->getName());
+			/* @var $event \Zend\Mvc\MvcEvent */
+			/* @var $target \Zend\Mvc\Application */
+			/* @var $route \Zend\Mvc\Router\Http\RouteMatch */
+
+			$target = $event->getTarget();
+			\Zend\Debug\Debug::dump(__NAMESPACE__ . ' ' . get_class($target) . ' ' . $event->getName());
 
 			// change the template of all the modules
-			// $evt->getViewModel()->setTemplate('layout/1column');
+			// $viewModel = $event->getViewModel();
+			// $viewModel->setTemplate('layout/error');
+
+			//$route = $target->getMvcEvent()->getRouteMatch();
 		});
+
+		/**
+		 * These are the event hooks for the Zend\Mvc\Controller\AbstractActionController
+		 */
+		$sharedManager->attach('Zend\Mvc\Controller\AbstractActionController', array('dispatch'), function($event)
+		{
+			/* @var $event \Zend\Mvc\MvcEvent */
+			/* @var $target \Zend\Mvc\Controller\AbstractActionController */
+
+			$target = $event->getTarget();
+			\Zend\Debug\Debug::dump(__NAMESPACE__ . ' ' . get_class($target) . ' ' . $event->getName());
+
+			//$target->getEvent()->getRouteMatch()->setParam('company_id', 100001);
+		});
+
 
 		/**
 		 * These are the event hooks for the Zend\View\View
 		 */
-		/* @var $view \Zend\View\View */
-		$view = $serviceManager->get('ViewManager')
-			->getView();
-		$vm = $view->getEventManager();
-		$eventHooks = array(
-			'renderer',
-			'response'
-		);
-		$vm->attach($eventHooks, function  ($eventView)
+		$viewManager = $serviceManager->get('ViewManager')->getView()->getEventManager();
+		$viewManager->attach(array('renderer','response'), function  ($event)
 		{
-			/* @var $eventView \Zend\View\ViewEvent */
-			\Zend\Debug\Debug::dump('\Zend\View\View ' . $eventView->getName());
+			/* @var $event \Zend\View\ViewEvent */
+			/* @var $target \Zend\View\View */
+
+			$target = $event->getTarget();
+			\Zend\Debug\Debug::dump(__NAMESPACE__ . ' ' . get_class($target) . ' ' . $event->getName());
 		});
+
+		/* @formatter:on */
 	}
 
 	/**
